@@ -220,7 +220,7 @@ const validateLocalChain = () => {
             // step 1: validate current Block Hash
             process.stdout.write('Validating current block hash...');
             if (currentBlockHash !== currentBlock.blockHash) {
-                console.log('└─Current block hash does not match generated hash!');
+                console.log('\n└─Current block hash does not match generated hash!');
                 return reject(false);
             }
             console.log('ok');
@@ -228,7 +228,7 @@ const validateLocalChain = () => {
             // step 2: validate prev Block Hash
             process.stdout.write('Validating previous block hash...');
             if (previousBlockHash !== previousBlock.blockHash) {
-                console.log('└─Previous block hash does not match generated hash!');
+                console.log('\n└─Previous block hash does not match generated hash!');
                 return reject(false);
             }
             console.log('ok');
@@ -236,7 +236,7 @@ const validateLocalChain = () => {
             // step 3: validate hash link
             process.stdout.write('Validating hash chain link...');
             if (currentBlock.previousHash !== previousBlock.blockHash) {
-                console.log('└─Current block\'s previous hash does not match current block\'s hash!');
+                console.log('\n└─Current block\'s previous hash does not match current block\'s hash!');
                 return reject(false);
             }
             console.log('ok');
