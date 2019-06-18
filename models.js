@@ -39,8 +39,9 @@ const Frag = {
     properties: {
         index: 'int',
         RSfragCount: 'int',
-        fragHash: 'string',
+        fileHash: 'string',
         fragLocation: 'string',
+        fragHash: 'string',
     }
 };
 
@@ -48,10 +49,10 @@ const Frag = {
 const Block = {
     name: 'Block',
     properties: {
-        index: {type: 'int'},
+        index: {type: 'int', indexed: true},
         previousHash: 'string',
-        owner: {type: 'Owner', optional: true},
-        file: {type: 'File', optional: true},
+        owner: {type: 'Owner'},
+        file: {type: 'File'},
         transactions: {type: 'Transaction[]'},
         merkleRoot: 'string',
         timestamp: 'date',
