@@ -1,8 +1,8 @@
-const data = require('./test/data');
-const blockchain = require('./blockchain');
+const data = require('./blockchain/mock/data');
+const blockchain = require('./blockchain/blockchain');
 const SHA256 = require('crypto-js/sha256');
-
 const express = require('express');
+
 let app = express();
 blockchain.initializeChain();
 

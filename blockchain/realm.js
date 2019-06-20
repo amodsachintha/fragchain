@@ -1,8 +1,8 @@
 const Realm = require('realm');
-const models = require('./models');
+const models = require(__dirname + '/models');
 
 const realm = new Realm({
-    path: './db/vault.realm',
+    path: __dirname + '/db/vault.realm',
     schema: [
         models.Block,
         models.File,
