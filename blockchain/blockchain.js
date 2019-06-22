@@ -47,9 +47,10 @@ const generateGenesisBlock = () => {
         }],
         timestamp: new Date(),
         merkleRoot: '0000000000000000000000000000000000000000000000000000000000000000',
-        blockHash: undefined
+        blockHash: '0000000000000000000000000000000000000000000000000000000000000000'
     };
-    block.blockHash = generateBlockHash(block);
+    // GENESIS should be the same on all nodes
+    // block.blockHash = generateBlockHash(block);
     try {
         realm.write(() => {
             realm.create('Block', block);

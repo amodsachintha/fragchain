@@ -13,7 +13,7 @@ const startSocketIOServer = () => {
             console.log('data: ' + data);
         });
 
-        client.on('sync_chain_version', data => {
+        client.on('sync_chain_version', () => {
             // send local chain version
             let chain_version = 3;
             client.emit('sync_chain_version_response', {
@@ -21,10 +21,10 @@ const startSocketIOServer = () => {
             })
         });
 
-        client.on('sync_chain_data', data => {
+        client.on('sync_chain', data => {
             // send local chain
-            let localChain = {};
-            client.emit('sync_chain_data_response', localChain)
+            let localChain = {'chain': 'hello', 'version': 3};
+            client.emit('sync_chain_response', localChain)
         });
 
 
