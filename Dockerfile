@@ -7,11 +7,11 @@ RUN apt-get install net-tools
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt install -y nodejs && node --version && npm --version
 
-# RUN npm install -g nodemon
+RUN npm install -g nodemon
 
 # API and Socket.io server port
 EXPOSE 3000
 EXPOSE 4444
 
 # START
-ENTRYPOINT cd /fragchain/messenger && node messenger.js
+ENTRYPOINT cd /fragchain/messenger && nodemon messenger.js

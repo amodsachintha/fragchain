@@ -9,14 +9,16 @@ let latestChainVersion = {socket: null, version: 0};
 const initializeSockets = (blockchain) => {
     blockchainRef = blockchain;
     VAULTS.forEach(serverIP => {
-        const sock = ioClient('http://' + serverIP, {path: '/messenger'});
+        let url = 'http://' + serverIP + ':4444';
+        console.log('(client)(info) ' + url);
+        const sock = ioClient(url);
         registerEventsOnSocket(sock, serverIP);
         sockets.push(sock);
     });
 };
 
 const addSocket = (serverIP) => {
-    const sock = ioClient('http://' + serverIP, {path: '/messenger'});
+    const sock = ioClient('http://' + serverIP + ':4444');
     registerEventsOnSocket(sock, serverIP);
     sockets.push(sock);
 };
@@ -24,17 +26,17 @@ const addSocket = (serverIP) => {
 const synchronizeChainVersionBroadcast = () => {
     return new Promise((resolve) => {
         sockets.forEach(socket => {
+            console.log('(client)(info) send: sync_chain_version to: ' + socket.id);
             socket.emit('sync_chain_version');
         });
+        // console.log('(client)(info) in setTimeout!');
         setTimeout(() => {
-            console.log('in setTimeout!');
             if (latestChainVersion.version > localChainVersion) {
-                console.log('(info) replacing localchain');
-
+                console.log('(client)(info) send: sync_chain to: ' + latestChainVersion.socket.id);
                 latestChainVersion.socket.emit('sync_chain');
                 localChainVersion = latestChainVersion;
-                resolve();
             }
+            resolve();
         }, 10000)
     });
 
@@ -42,22 +44,25 @@ const synchronizeChainVersionBroadcast = () => {
 
 const registerEventsOnSocket = (socket, ip) => {
     socket.on('connect_error', (err) => {
-        console.log('(warn) connect_error to server at: ' + ip)
+        console.log('(client)(warn) connect_error to server at: ' + ip);
+        console.log(err.toString());
     });
 
     socket.on('connect_timeout', (err) => {
-        console.log('(warn) connect_timeout to server at: ' + ip)
+        console.log('(client)(warn) connect_timeout to server at: ' + ip);
+        console.log(err.toString());
     });
 
     socket.on('sync_chain_version_response', data => {
-        console.log('(info) sync_chain_version_response from server at: ' + socket.handshake.address);
-        if (data.chain_version > latestChainVersion) {
+        console.log('(client)(info) recv: sync_chain_version_response from: ' + socket.id);
+        console.log('(client)(info) recv: chain_version: '+ data.chain_version);
+        if (data.chain_version > latestChainVersion.version) {
             latestChainVersion = {socket: socket, version: data.chain_version};
         }
     });
 
     socket.on('sync_chain_response', data => {
-        console.log('(info) sync_chain_response from server at: ' + socket.handshake.address);
+        console.log('(client)(info) recv: sync_chain_response from: ' + socket.id);
         console.log(data);
         // todo replace localchain for now.. add processing changes to later
     })
