@@ -56,7 +56,7 @@ const Block = {
         transactions: {type: 'Transaction[]'},
         merkleRoot: 'string',
         timestamp: 'date',
-        blockHash: 'string'
+        blockHash: {type: 'string', indexed: true},
     }
 };
 

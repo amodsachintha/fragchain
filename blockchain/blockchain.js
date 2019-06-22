@@ -82,12 +82,29 @@ const storeBlock = (owner, file, transactions) => {
         try {
             realm.write(() => {
                 const blockFromChain = realm.create('Block', block);
-                resolve(blockFromChain);
+                resolve(block);
             })
         } catch (e) {
             reject(e);
         }
     })
+};
+
+/* Store entire block as is into the local chain */
+const storeBlockFromRemote = (block) => {
+    return new Promise((resolve, reject) => {
+        // if(block.previousHash === getLatestBlock().previousHash){
+        try {
+            realm.write(() => {
+                resolve(realm.create('Block', block));
+            });
+        } catch (e) {
+            reject(e);
+        }
+        // }else {
+        //     reject('ERROR: SYNC_CHAIN first!');
+        // }
+    });
 };
 
 /* Generate Merkle root of -ALL- Transactions from Transaction Hash (transactionHash) */
@@ -171,8 +188,8 @@ const createRSFragment = (index, rsFragCount, fileHash, fragLocation) => {
 };
 
 /* Get a lazy loaded object mapping to the local chain. */
-const getChain = () => {
-    return realm.objects('Block').sorted('index', true);
+const getChain = (reversed = true) => {
+    return realm.objects('Block').sorted('index', reversed);
 };
 
 /* Gets the latest (top) block */
@@ -197,54 +214,59 @@ const findBlocksByOwner = (owner) => {
 
 /* Validate the Localchain. Returns a promise */
 const validateLocalChain = () => {
-    return new Promise(((resolve, reject) => {
+    return new Promise((resolve, reject) => {
         // get chain with the latest block on top
         let blockchain = realm.objects('Block').sorted('index', true);
         const chainLength = blockchain.length;
         console.log('Blockchain Length: ' + chainLength);
         let currentBlock, previousBlock, currentBlockHash, previousBlockHash;
-        for (let i = 0; i < chainLength; i++) {
-            console.log('Iteration: ' + (i + 1));
-            if (blockchain[i].index === 0) {
-                console.log('On genesis block now.\n└─Local chain integrity verified!\n');
-                return resolve(true);
+        try{
+            for (let i = 0; i < chainLength; i++) {
+                console.log('Iteration: ' + (i + 1));
+                if (blockchain[i].index === 0) {
+                    console.log('On genesis block now.\n└─Local chain integrity verified!\n');
+                    return resolve(true);
+                }
+                currentBlock = blockchain[i];
+                currentBlockHash = generateBlockHash(currentBlock);
+
+                previousBlock = blockchain[i + 1];
+                previousBlockHash = generateBlockHash(previousBlock);
+
+                console.log('(Current Block) index: ' + currentBlock.index + ', hash: ' + currentBlock.blockHash);
+                console.log('(Previous Block) index: ' + previousBlock.index + ', hash: ' + previousBlock.blockHash);
+
+                // step 1: validate current Block Hash
+                process.stdout.write('Validating current block hash...');
+                if (currentBlockHash !== currentBlock.blockHash) {
+                    console.log('\n└─Current block hash does not match generated hash!');
+                    return reject(false);
+                }
+                console.log('ok');
+
+                // step 2: validate prev Block Hash
+                process.stdout.write('Validating previous block hash...');
+                if (previousBlock.index === 0) {
+                    console.log('ok');
+                }else if(previousBlockHash !== previousBlock.blockHash){
+                    console.log('\n└─Previous block hash does not match generated hash!');
+                    return reject(false);
+                }
+
+                // step 3: validate hash link
+                process.stdout.write('Validating hash chain link...');
+                if (currentBlock.previousHash !== previousBlock.blockHash) {
+                    console.log('\n└─Current block\'s previous hash does not match current block\'s hash!');
+                    return reject(false);
+                }
+                console.log('ok');
+
+                console.log('---------------------------------------');
             }
-            currentBlock = blockchain[i];
-            currentBlockHash = generateBlockHash(currentBlock);
-
-            previousBlock = blockchain[i + 1];
-            previousBlockHash = generateBlockHash(previousBlock);
-
-            console.log('(Current Block) index: ' + currentBlock.index + ', hash: ' + currentBlock.blockHash);
-            console.log('(Previous Block) index: ' + previousBlock.index + ', hash: ' + previousBlock.blockHash);
-
-            // step 1: validate current Block Hash
-            process.stdout.write('Validating current block hash...');
-            if (currentBlockHash !== currentBlock.blockHash) {
-                console.log('\n└─Current block hash does not match generated hash!');
-                return reject(false);
-            }
-            console.log('ok');
-
-            // step 2: validate prev Block Hash
-            process.stdout.write('Validating previous block hash...');
-            if (previousBlockHash !== previousBlock.blockHash) {
-                console.log('\n└─Previous block hash does not match generated hash!');
-                return reject(false);
-            }
-            console.log('ok');
-
-            // step 3: validate hash link
-            process.stdout.write('Validating hash chain link...');
-            if (currentBlock.previousHash !== previousBlock.blockHash) {
-                console.log('\n└─Current block\'s previous hash does not match current block\'s hash!');
-                return reject(false);
-            }
-            console.log('ok');
-
-            console.log('---------------------------------------');
+        }catch (e) {
+            reject(e);
         }
-    }));
+    });
 
 };
 
@@ -252,6 +274,76 @@ const validateLocalChain = () => {
 const getLocalChainVersion = () => {
     return realm.objects('Block').length;
 };
+
+const replaceChain = (newChain) => {
+    let deletePromise = new Promise((resolve, reject) => {
+        try {
+            realm.write(() => {
+                let localChain = realm.objects('Block');
+                realm.delete(localChain); // Deletes all Blocks
+            });
+            resolve(true);
+        } catch (e) {
+            reject(e);
+        }
+    });
+    let replacePromise = new Promise((resolve, reject) => {
+        let newChainObjects = newChain.map((block) => {
+            let transactions = block.transactions.map((transaction) => {
+                let frags = transaction.frags.map((frag) => {
+                    return {
+                        index: frag.index,
+                        RSfragCount: frag.RSfragCount,
+                        fileHash: frag.fileHash,
+                        fragHash: frag.fileHash,
+                        fragLocation: frag.fragLocation,
+                    }
+                });
+                return {
+                    index: transaction.index,
+                    encFragCount: transaction.encFragCount,
+                    fragHash: transaction.fragHash,
+                    encFragHash: transaction.encFragHash,
+                    frags: frags,
+                    merkleRoot: transaction.merkleRoot,
+                    transactionHash: transaction.transactionHash,
+                    rsConfig: transaction.rsConfig
+                }
+            });
+            return {
+                index: block.index,
+                previousHash: block.previousHash,
+                owner: block.owner,
+                file: block.file,
+                transactions: transactions,
+                merkleRoot: block.merkleRoot,
+                timestamp: block.timestamp,
+                blockHash: block.blockHash
+            }
+        });
+
+        newChainObjects.forEach(block => {
+            try {
+                realm.write(() => {
+                    resolve(realm.create('Block', block));
+                });
+            } catch (e) {
+                reject(e);
+            }
+        });
+    });
+
+    deletePromise.then(() => {
+        replacePromise.then(bl => {
+            console.log('******** LOCAL CHAIN REPLACED *****')
+        }).catch(e => {
+            console.log(e);
+        })
+    }).catch(e => {
+        console.log(e);
+    });
+};
+
 
 /* Good old exports */
 module.exports = {
@@ -264,5 +356,7 @@ module.exports = {
     findBlocksByOwner,
     validateLocalChain,
     createRSFragment,
-    getLocalChainVersion
+    getLocalChainVersion,
+    storeBlockFromRemote,
+    replaceChain
 };

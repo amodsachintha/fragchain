@@ -14,4 +14,4 @@ EXPOSE 3000
 EXPOSE 4444
 
 # START
-ENTRYPOINT cd /fragchain/messenger && nodemon messenger.js
+ENTRYPOINT cd /fragchain && nodemon .

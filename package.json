@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "clean": "rm -rf ./db/vault*",
+    "clean": "rm -rf ./blockchain/db/vault*",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

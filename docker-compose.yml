@@ -1,0 +1,45 @@
+version: '3.7'
+services:
+  node-1:
+    container_name: node-1
+    image: fragchain:latest
+    networks:
+      vault:
+        ipv4_address: 172.16.0.10
+    ports:
+      - "3000"
+      - "4444"
+    volumes:
+      - ~/github/fragchain:/fragchain
+
+  node-2:
+    container_name: node-2
+    image: fragchain:latest
+    networks:
+      vault:
+        ipv4_address: 172.16.0.20
+    ports:
+      - "3000"
+      - "4444"
+    volumes:
+      - ~/github/fragchain:/fragchain
+
+  node-3:
+    container_name: node-3
+    image: fragchain:latest
+    networks:
+      vault:
+        ipv4_address: 172.16.0.30
+    ports:
+      - "3000"
+      - "4444"
+    volumes:
+      - ~/github/fragchain:/fragchain
+
+
+networks:
+  vault:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.16.0.0/24"

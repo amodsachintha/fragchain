@@ -7,14 +7,14 @@ run this command in the directory where the **Dockerfile** is located.
 
 ## Then spin up a container from the image
 
-    docker run -it --name fragchain --net vault --ip 172.16.0.10 -v ~/github/fragchain:/fragchain -p 3000:3000 -p 4444:4444 vault
+    docker run -it --name node-1 --net vault --ip 172.16.0.10 -v ~/github/fragchain:/fragchain -p 3000 -p 4444 fragchain
 
   
-**Ctrl + C** to stop the container or `docker stop fragchain`  
+**Ctrl + C** to stop the container or `docker stop node-1`  
   
 ## to start the container  
 
-    docker start -i fragchain
+    docker start -i node-1
     
 ##  use docker-compose to orchestrate multiple containers
 install docker-compose, then
