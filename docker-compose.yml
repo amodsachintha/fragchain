@@ -36,6 +36,18 @@ services:
     volumes:
       - ~/github/fragchain:/fragchain
 
+  node-4:
+    container_name: node-4
+    image: fragchain:latest
+    networks:
+      vault:
+        ipv4_address: 172.16.0.40
+    ports:
+      - "3000"
+      - "4444"
+    volumes:
+      - ~/github/fragchain:/fragchain
+
 
 networks:
   vault:

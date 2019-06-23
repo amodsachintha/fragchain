@@ -23,7 +23,8 @@
     "merkletreejs": "^0.1.3",
     "realm": "^3.0.0-beta.1",
     "socket.io": "^2.2.0",
-    "socket.io-client": "^2.2.0"
+    "socket.io-client": "^2.2.0",
+    "winston": "^3.2.1"
   },
   "repository": "https://github.com/amodsachintha/fragchain"
 }

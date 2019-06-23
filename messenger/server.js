@@ -9,7 +9,7 @@ let clients = [];
 const bootstrap = (blockchain) => {
     blockchainRef = blockchain;
     io.on('connection', client => {
-        const host = client.handshake.headers.host;
+        let host = client.handshake.address;
         clients.push({
             client: client,
             host: host
