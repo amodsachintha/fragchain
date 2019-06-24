@@ -1,6 +1,7 @@
 const realm = require('./realm');
 const {MerkleTree} = require('merkletreejs');
 const SHA256 = require('crypto-js/sha256');
+const logger = require('../logger').getLogger('blockchain');
 
 /* Initializes the blockchain. Generates the genesis block when run for the first time. */
 const initializeChain = () => {
@@ -11,7 +12,7 @@ const initializeChain = () => {
 
 /* Generate the genesis block. */
 const generateGenesisBlock = () => {
-    console.log('Generating Genesis Block!');
+    logger.info('Generating Genesis Block!');
     const block = {
         index: 0,
         previousHash: '0000000000000000000000000000000000000000000000000000000000000000',
@@ -56,11 +57,11 @@ const generateGenesisBlock = () => {
             realm.create('Block', block);
         });
     } catch (e) {
-        console.log('Error generating Genesis Block!!!');
-        console.log(e);
+        logger.error('Error generating Genesis Block!!!');
+        logger.debug(e.toString());
     }
-    console.log('Genesis block generated successfully!');
-    console.log('Local chain is at idx: 1');
+    logger.info('Genesis block generated successfully!');
+    logger.info('Local chain is at idx: 1');
 };
 
 /* Store a block in the local-chain. returns a Promise. */
@@ -81,7 +82,7 @@ const storeBlock = (owner, file, transactions) => {
     return new Promise((resolve, reject) => {
         try {
             realm.write(() => {
-                const blockFromChain = realm.create('Block', block);
+                realm.create('Block', block);
                 resolve(block);
             })
         } catch (e) {
@@ -111,7 +112,7 @@ const storeBlockFromRemote = (block) => {
 const generateTransactionMerkleRoot = (transactions) => {
     const trLeaves = transactions.map(x => x.transactionHash);
     const trTree = new MerkleTree(trLeaves, SHA256);
-    console.log('Generating the Merkle Root of Transactions..');
+    logger.info('Generating the Merkle Root of Transactions..');
     trTree.print();
     return trTree.getRoot().toString('hex');
 };
@@ -120,7 +121,7 @@ const generateTransactionMerkleRoot = (transactions) => {
 const generateRSFragMerkleRoot = (fragments) => {
     const fragLeaves = fragments.map(x => x.fragHash);
     const fragTree = new MerkleTree(fragLeaves, SHA256);
-    console.log('Generating the Merkle Root of Fragments..');
+    logger.info('Generating the Merkle Root of Fragments..');
     fragTree.print();
     return fragTree.getRoot().toString('hex');
 };
@@ -198,7 +199,7 @@ const getLatestBlock = () => {
         let sortedChain = realm.objects('Block').sorted('index', true);
         return sortedChain[0];
     } catch (e) {
-        console.log(e);
+        logger.debug(e);
         return null;
     }
 };
@@ -218,13 +219,13 @@ const validateLocalChain = () => {
         // get chain with the latest block on top
         let blockchain = realm.objects('Block').sorted('index', true);
         const chainLength = blockchain.length;
-        console.log('Blockchain Length: ' + chainLength);
+        logger.info('Blockchain Length: ' + chainLength);
         let currentBlock, previousBlock, currentBlockHash, previousBlockHash;
-        try{
+        try {
             for (let i = 0; i < chainLength; i++) {
-                console.log('Iteration: ' + (i + 1));
+                logger.info('Iteration: ' + (i + 1));
                 if (blockchain[i].index === 0) {
-                    console.log('On genesis block now.\n└─Local chain integrity verified!\n');
+                    logger.info('On genesis block now.\n└─Local chain integrity verified!\n');
                     return resolve(true);
                 }
                 currentBlock = blockchain[i];
@@ -233,8 +234,8 @@ const validateLocalChain = () => {
                 previousBlock = blockchain[i + 1];
                 previousBlockHash = generateBlockHash(previousBlock);
 
-                console.log('(Current Block) index: ' + currentBlock.index + ', hash: ' + currentBlock.blockHash);
-                console.log('(Previous Block) index: ' + previousBlock.index + ', hash: ' + previousBlock.blockHash);
+                logger.info('(Current Block) index: ' + currentBlock.index + ', hash: ' + currentBlock.blockHash);
+                logger.info('(Previous Block) index: ' + previousBlock.index + ', hash: ' + previousBlock.blockHash);
 
                 // step 1: validate current Block Hash
                 process.stdout.write('Validating current block hash...');
@@ -248,7 +249,7 @@ const validateLocalChain = () => {
                 process.stdout.write('Validating previous block hash...');
                 if (previousBlock.index === 0) {
                     console.log('ok');
-                }else if(previousBlockHash !== previousBlock.blockHash){
+                } else if (previousBlockHash !== previousBlock.blockHash) {
                     console.log('\n└─Previous block hash does not match generated hash!');
                     return reject(false);
                 }
@@ -263,7 +264,7 @@ const validateLocalChain = () => {
 
                 console.log('---------------------------------------');
             }
-        }catch (e) {
+        } catch (e) {
             reject(e);
         }
     });
@@ -335,7 +336,7 @@ const replaceChain = (newChain) => {
 
     deletePromise.then(() => {
         replacePromise.then(bl => {
-            console.log('******** LOCAL CHAIN REPLACED *****')
+            logger.warn('******** LOCAL CHAIN REPLACED ********')
         }).catch(e => {
             console.log(e);
         })

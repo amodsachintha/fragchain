@@ -1,6 +1,7 @@
 const {VAULTS} = require('../config');
 const ioClient = require('socket.io-client');
 const c = require('./constants');
+const logger = require('../logger').getLogger('messenger-client');
 let blockchainRef = undefined;
 
 // connections to vault servers via socket
@@ -19,7 +20,7 @@ const bootstrap = (blockchain) => {
 const initializeSockets = () => {
     sockets = VAULTS.map(ip => {
         let url = 'http://' + ip + ':4444';
-        console.log('(client)(info) ' + url + '/messenger');
+        logger.info(`connect: ${url}/messenger`);
         const s = ioClient(url, {path: '/messenger'});
         return {
             socket: s,
@@ -35,7 +36,7 @@ const initializeSockets = () => {
 };
 
 const addSocket = (serverIP) => {
-    let url = 'http://' + serverIP + ':4444';
+    let url = `http://${serverIP}:4444`;
     const sock = ioClient(url, {path: '/messenger'});
     registerBaseEventsOnSocket(sock);
     registerEventsOnSocket(sock, serverIP);
@@ -45,13 +46,13 @@ const addSocket = (serverIP) => {
 const synchronizeChainVersionBroadcast = () => {
     return new Promise((resolve) => {
         sockets.forEach(sock => {
-            console.log('(client)(info) send: ' + c.SYNC_CHAIN_VERSION + ' to: ' + sock.ip + ':4444');
+            logger.info(`send: ${c.SYNC_CHAIN_VERSION} to: ${sock.ip}:4444`);
             sock.socket.emit(c.SYNC_CHAIN_VERSION);
         });
         // console.log('(client)(info) in setTimeout!');
         setTimeout(() => {
             if (latestChainVersion.version > localChainVersion) {
-                console.log('(client)(info) send: ' + c.SYNC_CHAIN);
+                logger.info(`send: ${c.SYNC_CHAIN}`);
                 latestChainVersion.socket.emit(c.SYNC_CHAIN);
                 localChainVersion = latestChainVersion.version;
             }
@@ -63,35 +64,35 @@ const synchronizeChainVersionBroadcast = () => {
 
 const registerEventsOnSocket = (socket, ip) => {
     socket.on(c.SYNC_CHAIN_VERSION_RESPONSE, data => {
-        console.log('(client)(info) recv: ' + c.SYNC_CHAIN_VERSION_RESPONSE + ' from: ' + ip + ':4444');
-        console.log('(client)(info) recv: chain_version: ' + data.chain_version);
+        logger.info(`recv: ${c.SYNC_CHAIN_VERSION_RESPONSE} from: ${ip}:4444`);
+        logger.info(`recv: chain_version: ${data.chain_version}`);
         if (data.chain_version > latestChainVersion.version) {
             latestChainVersion = {socket: socket, version: data.chain_version};
         }
     });
 
     socket.on(c.SYNC_CHAIN_RESPONSE, data => {
-        console.log('(client)(info) recv: ' + c.SYNC_CHAIN_RESPONSE + ' from: ' + ip + ':4444');
-        console.log('LENGTH_OF_RECEIVED_CHAIN: ' + data.length);
+        logger.info(`recv: ${c.SYNC_CHAIN_RESPONSE} from: ${ip}:4444`);
+        logger.info(`LENGTH_OF_RECEIVED_CHAIN: ${data.length}`);
         // todo replace localchain for now.. add processing changes to later
         blockchainRef.replaceChain(data);
     });
 
     socket.on(c.RECV_NEW_BLOCK, block => {
-        console.log('(client)(info) recv: ' + c.RECV_NEW_BLOCK + ' from: ' + ip + ':4444');
-        blockchainRef.storeBlockFromRemote(block).then((block)=>{
-            console.log('Successfully Saved block to chain: ' + block.blockHash)
-        }).catch((e)=>{
-            console.log(e);
+        logger.info(`recv: ${c.RECV_NEW_BLOCK} from: ${ip}:4444`);
+        blockchainRef.storeBlockFromRemote(block).then((block) => {
+            logger.info(`Successfully Saved block to chain: ${block.blockHash}`)
+        }).catch((e) => {
+            logger.debug(e);
         });
     });
 };
 
-const onConnectForSocket = (socket,ip) => {
+const onConnectForSocket = (socket, ip) => {
     socket.on('connect', () => {
-        console.log('(client)(success) connect to server at: ' + ip + ':4444');
+        logger.info(`Connected to server at: ${ip}:4444`);
         synchronizeChainVersionBroadcast().then(() => {
-            console.log('Sync Chain Loop complete!');
+            logger.info(`Sync Chain Loop complete!`);
             // blockchainRef.validateLocalChain().then(val =>{
             //     console.log("Chain valid")
             // }).catch(e =>{
@@ -103,13 +104,13 @@ const onConnectForSocket = (socket,ip) => {
 
 const registerBaseEventsOnSocket = (socket, ip) => {
     socket.on('connect_error', (err) => {
-        console.log('(client)(warn) connect_error to server at: ' + ip + ':4444');
-        console.log(err.toString());
+        logger.warn(`connect_error to server at: ${ip}:4444`);
+        logger.debug(err.toString());
     });
 
     socket.on('connect_timeout', (err) => {
-        console.log('(client)(warn) connect_timeout to server at: ' + ip + ':4444');
-        console.log(err.toString());
+        logger.warn(`connect_timeout to server at: ${ip}:4444`);
+        logger.debug(err.toString());
     });
 };
 

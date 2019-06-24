@@ -5,18 +5,18 @@ const express = require('express');
 const CONSTANTS = require('./messenger/constants');
 let app = express();
 const ip = require('ip');
-const logger = require('./logger');
+const logger = require('./logger').getLogger('index');
 
 // initializing
-logger.getLogger('index').info('Initializing....');
+logger.info('Initializing....');
 blockchain.initializeChain();
 messenger.initMessenger(blockchain);
 
 const store = (owner, file, transactions) => {
     blockchain.storeBlock(owner, file, transactions).then((block) => {
         messenger.broadcast(CONSTANTS.BROADCAST_NEW_BLOCK, block);
-    }).catch(e=>{
-
+    }).catch(e => {
+        logger.crit(e)
     });
 };
 
@@ -44,9 +44,25 @@ const getChain = () => {
 
 app.get('/', (req, res) => {
     // blockchain.storeBlock(data.owner, data.file, data.transactions);
-    res.json(blockchain.getChain());
+    res.sendFile(require('path').join(__dirname, '/public/index.html'));
+    // res.json(blockchain.getChain());
 });
 
+app.get('/chain', (req, res) => {
+    let chain = blockchain.getChain();
+    res.json({
+        ip: ip.address(),
+        clients: messenger.getConnectedClientsToServer(),
+        chain: chain.map(bl => bl.blockHash)
+    });
+});
+
+app.get('/store', (req, res) => {
+    store(data.owner, data.file, data.transactions);
+    res.json({'status': 'ok'});
+});
+
+
 app.listen(3000, function () {
-    console.log('App listening on port 3000!');
+    logger.info('App listening on port 3000!');
 });

@@ -1,30 +1,17 @@
-const winston = require('winston');
-
-const alignColorsAndTime = winston.format.combine(
-    winston.format.colorize({
-        all:true
-    }),
-    winston.format.label({
-        label:'[LOGGER]'
-    }),
-    winston.format.timestamp({
-        format:"YY-MM-DD HH:MM:SS"
-    }),
-    winston.format.printf(
-        info => ` ${info.label}  ${info.timestamp}  ${info.level} : ${info.message}`
-    )
-);
+const { createLogger, format, transports } = require('winston');
 
 const getLogger = (service = 'vault') => {
-    return  winston.createLogger({
+    return createLogger({
         level: 'debug',
         defaultMeta: { service: service },
-        transports: [
-            new (winston.transports.Console)({
-                format: winston.format.combine(winston.format.colorize(), alignColorsAndTime)
-            })
-        ],
-        exitOnError: false, // do not exit on handled exceptions
+        format: format.combine(
+            format.colorize({all:true}),
+            format.timestamp({
+                format: 'YYYY-MM-DD HH:mm:ss'
+            }),
+            format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
+        ),
+        transports: [new transports.Console()],
     });
 };
 

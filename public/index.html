@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fragchain Demo</title>
+    <link rel="stylesheet" href="//stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          crossorigin="anonymous">
+    <script src="//unpkg.com/axios/dist/axios.min.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+
+    <h1>Fragchain Node</h1>
+
+    <div class="row mt-3">
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <small>IP Address of Node</small>
+                    <h1 id="ip"></h1>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow h-100">
+                <div class="card-body">
+                    <small>Connected Nodes</small>
+                    <div id="clients">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4 mb-5">
+        <div class="col-md">
+            <div class="card shadow">
+                <div class="card-header">
+                    <h5>Local Chain</h5>
+                    <button class="btn btn-outline-primary btn-sm" onclick="storeBlock()">Save Block</button>
+                </div>
+                <div class="card-body">
+                    <div id="hashes">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    setInterval(updateHashes,2000);
+    // setInterval(storeBlock,700);
+    function storeBlock() {
+        axios.get('/store')
+            .then(function (response) {
+                console.log(response.data);
+                updateHashes();
+            })
+            .catch(function (error) {
+                console.log(error);
+            })
+    }
+
+    function updateHashes() {
+        axios.get('/chain')
+            .then(function (response) {
+                let hashes = '', clients = '';
+                let i = response.data.chain.length - 1;
+                response.data.clients.forEach(c => {
+                    clients += `${c} <br>`
+                });
+                response.data.chain.forEach(h => {
+                    hashes += `<kbd>${i--}</kbd> : <small>${h}</small><br>`
+                });
+                document.getElementById('hashes').innerHTML = hashes;
+                document.getElementById('clients').innerHTML = clients;
+                document.getElementById('ip').innerText = `${response.data.ip}`;
+                console.log(response.data.chain.length);
+            })
+            .catch(function (error) {
+                console.log(error);
+            })
+    }
+</script>
+
+</body>
+</html>

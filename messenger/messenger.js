@@ -34,7 +34,13 @@ const broadcast = (type, data) => {
     server.broadcastMessage(type, data);
 };
 
+const getConnectedClientsToServer = () => {
+    return server.getClients();
+};
+
+
 module.exports = {
     initMessenger,
     broadcast,
+    getConnectedClientsToServer
 };
